@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Live Disease — Assistant IA Live</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05080f;--bg2:#08101a;--bg3:#0d1523;--card:#070d15;
+  --brd:rgba(255,255,255,.06);--brd2:rgba(255,255,255,.12);
+  --t1:#e0e8f5;--t2:#5a7299;--t3:#1a2d47;
+  --red:#ef4444;--redl:#fca5a5;--redbg:rgba(239,68,68,.1);
+  --ora:#f97316;--oral:#fdba74;--orabg:rgba(249,115,22,.1);
+  --yel:#eab308;--yell:#fde047;--yelbg:rgba(234,179,8,.1);
+  --grn:#22c55e;--grnl:#86efac;--grnbg:rgba(34,197,94,.1);
+  --blu:#3b82f6;--blul:#93c5fd;--blubg:rgba(59,130,246,.1);
+  --tea:#14b8a6;--teal:#5eead4;--teabg:rgba(20,184,166,.1);
+  --pur:#8b5cf6;--purl:#c4b5fd;--purbg:rgba(139,92,246,.1);
+  --groq1:#f55036;--groq2:#ff8c00;
+  --r:10px;--rs:6px
+}
+body{background:var(--bg);color:var(--t1);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+
+/* HEADER */
+header{height:50px;background:var(--bg2);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px;padding:0 14px;flex-shrink:0;z-index:500}
+.brand{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.brand-icon{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#ef4444,#f97316);display:flex;align-items:center;justify-content:center;font-size:15px}
+.brand-name{font-weight:800;font-size:13px;background:linear-gradient(90deg,#f87171,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand-sub{font-size:8px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.7px}
+.srch{flex:1;max-width:500px;position:relative}
+.srch input{width:100%;background:var(--bg3);border:1px solid var(--brd);color:var(--t1);padding:6px 34px 6px 12px;border-radius:18px;font-size:11px;outline:none;transition:border .2s}
+.srch input:focus{border-color:var(--tea)}
+.srch input::placeholder{color:var(--t3)}
+.s-ico{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:12px;pointer-events:none}
+.s-drop{position:absolute;top:calc(100%+6px);left:0;right:0;background:var(--card);border:1px solid var(--brd2);border-radius:var(--r);z-index:2000;max-height:360px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.85);display:none}
+.si{display:flex;align-items:center;gap:9px;padding:8px 11px;cursor:pointer;border-bottom:1px solid var(--brd);transition:background .1s}
+.si:hover,.si.foc{background:rgba(20,184,166,.06)}
+.si:last-child{border-bottom:none}
+.si-em{font-size:17px;flex-shrink:0}
+.si-name{font-size:11px;font-weight:600}
+.si-meta{font-size:9px;color:var(--t2);margin-top:1px}
+.si-b{font-size:7px;font-weight:700;padding:1px 5px;border-radius:5px}
+
+/* HEADER RIGHT */
+.hr{display:flex;align-items:center;gap:7px;margin-left:auto;flex-shrink:0}
+.live-b{display:flex;align-items:center;gap:4px;background:var(--redbg);border:1px solid rgba(239,68,68,.2);color:var(--redl);padding:3px 7px;border-radius:14px;font-size:8px;font-weight:700}
+.live-d{width:4px;height:4px;border-radius:50%;background:var(--red);animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.clk{font-size:9px;color:var(--t2);font-family:monospace}
+.btn-ai{background:linear-gradient(135deg,rgba(245,80,54,.15),rgba(255,140,0,.15));border:1px solid rgba(245,80,54,.3);color:#fdba74;padding:4px 9px;border-radius:var(--rs);font-size:9px;cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:600}
+.btn-ai:hover{background:linear-gradient(135deg,var(--groq1),var(--groq2));color:#fff;border-color:transparent}
+.btn-ai.ok{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25);color:var(--grnl)}
+.lang{background:var(--bg3);border:1px solid var(--brd);color:var(--t2);padding:3px 5px;border-radius:var(--rs);font-size:9px;outline:none;cursor:pointer}
+.btn-xs{background:var(--bg3);border:1px solid var(--brd);color:var(--t2);padding:3px 7px;border-radius:var(--rs);cursor:pointer;font-size:9px;transition:all .12s}
+.btn-xs:hover{background:var(--tea);color:#fff;border-color:var(--tea)}
+
+/* STATUS */
+.statusbar{height:24px;background:var(--bg2);border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:7px;padding:0 12px;font-size:8px;flex-shrink:0}
+.sd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sd.g{background:var(--grn);animation:glow 2s infinite}
+.sd.o{background:var(--ora)}.sd.r{background:var(--red)}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{box-shadow:0 0 5px rgba(34,197,94,.5)}}
+.sp{padding:2px 6px;border-radius:4px;font-weight:700;border:1px solid}
+.sp-live{background:var(--grnbg);color:var(--grnl);border-color:rgba(34,197,94,.18)}
+.sp-ai{background:var(--orabg);color:var(--oral);border-color:rgba(249,115,22,.18)}
+.sp-doc{background:var(--blubg);color:var(--blul);border-color:rgba(59,130,246,.12)}
+.sp-warn{background:var(--yelbg);color:var(--yell);border-color:rgba(234,179,8,.18)}
+.spin{display:inline-block;width:7px;height:7px;border:1.5px solid rgba(255,255,255,.1);border-top-color:var(--tea);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sr{margin-left:auto;display:flex;gap:7px;align-items:center;color:var(--t2)}
+.sref{background:none;border:1px solid var(--brd);color:var(--t2);padding:1px 6px;border-radius:3px;font-size:7px;cursor:pointer;transition:all .12s}
+.sref:hover{background:var(--tea);color:#fff;border-color:var(--tea)}
+
+/* TABS */
+.tabs{background:var(--bg2);border-bottom:1px solid var(--brd);display:flex;gap:1px;padding:4px 10px;flex-shrink:0;overflow-x:auto}
+.tab{padding:4px 10px;border-radius:var(--rs);border:none;background:none;color:var(--t2);font-size:10px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .12s}
+.tab.on{background:var(--bg3);color:var(--t1)}
+.tab:hover:not(.on){color:var(--t1)}
+.ttag{font-size:7px;font-weight:700;padding:1px 3px;border-radius:3px;margin-left:2px;vertical-align:middle}
+.tl{background:var(--grnbg);color:var(--grnl);border:1px solid rgba(34,197,94,.18)}
+.ta{background:var(--orabg);color:var(--oral);border:1px solid rgba(249,115,22,.18)}
+
+/* LAYOUT */
+.body{display:flex;flex:1;overflow:hidden}
+.sidebar{width:210px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden}
+.content{flex:1;overflow-y:auto}
+.panel{display:none;padding:9px}.panel.on{display:block}
+.pf{display:none;padding:0;height:100%}.pf.on{display:flex;flex-direction:column}
+
+/* SIDEBAR */
+.sb-s{padding:7px 7px 3px}
+.sb-s input{width:100%;background:var(--bg3);border:1px solid var(--brd);color:var(--t1);padding:5px 8px;border-radius:var(--rs);font-size:9px;outline:none}
+.sb-s input::placeholder{color:var(--t3)}
+.sb-f{display:flex;gap:2px;padding:0 6px 4px;flex-wrap:wrap}
+.sf{background:none;border:1px solid var(--brd);color:var(--t3);padding:2px 5px;border-radius:7px;font-size:8px;cursor:pointer;transition:all .12s}
+.sf.on,.sf:hover{background:var(--bg3);border-color:var(--brd2);color:var(--t1)}
+.sb-list{flex:1;overflow-y:auto;padding:2px 5px 5px}
+.sbi{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:var(--rs);cursor:pointer;transition:background .1s;margin-bottom:1px}
+.sbi:hover,.sbi.sel{background:var(--bg3)}
+.sbi.sel{border-left:2px solid var(--tea);padding-left:4px}
+.sbd{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sbn{flex:1;font-size:9px;font-weight:500}
+.sbr{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.sbk{font-size:6px;font-weight:700;padding:1px 3px;border-radius:4px}
+.sbt{font-size:8px}
+.sb-foot{padding:6px 8px;border-top:1px solid var(--brd);font-size:8px;flex-shrink:0}
+.sfr{display:flex;justify-content:space-between;margin-bottom:2px;color:var(--t3)}
+.sfr b{color:var(--t2)}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--brd);border-radius:var(--r);padding:11px}
+.ct{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t2);margin-bottom:7px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.mc{background:var(--card);border:1px solid var(--brd);border-radius:var(--r);padding:9px 11px}
+.ml{font-size:9px;color:var(--t2);margin-bottom:3px;display:flex;align-items:center;gap:4px}
+.mv{font-size:18px;font-weight:700;line-height:1;margin-bottom:2px}
+.ms{font-size:9px;font-weight:500}
+.up{color:var(--redl)}.dn{color:var(--grnl)}.neu{color:var(--t2)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:1px 5px;border-radius:5px;font-size:8px;font-weight:700}
+.tag{display:inline-block;padding:2px 5px;border-radius:4px;font-size:9px;background:var(--bg3);color:var(--t2);border:1px solid var(--brd)}
+.bc{background:var(--redbg);color:var(--redl)}
+.bh{background:var(--orabg);color:var(--oral)}
+.bm{background:var(--yelbg);color:var(--yell)}
+.bl{background:var(--grnbg);color:var(--grnl)}
+.bw{background:var(--blubg);color:var(--blul)}
+.b-live{background:var(--grnbg);color:var(--grnl);border:1px solid rgba(34,197,94,.18);padding:1px 5px;border-radius:4px;font-size:7px;font-weight:700}
+.b-ai{background:var(--orabg);color:var(--oral);border:1px solid rgba(249,115,22,.18);padding:1px 5px;border-radius:4px;font-size:7px;font-weight:700}
+.b-doc{background:var(--blubg);color:var(--blul);border:1px solid rgba(59,130,246,.12);padding:1px 5px;border-radius:4px;font-size:7px;font-weight:700}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+
+/* MAP */
+.map-wrap{display:flex;gap:8px;height:100%}
+#map-c{flex:1;position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--brd)}
+#the-map{width:100%;height:100%;background:#aad3df;cursor:grab}
+#the-map:active{cursor:grabbing}
+.leaflet-container{background:#aad3df!important}
+.mp{width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:7px;overflow-y:auto}
+.mct{position:absolute;top:8px;right:8px;z-index:500;background:rgba(5,8,15,.92);border:1px solid var(--brd);border-radius:var(--rs);padding:4px;display:flex;flex-direction:column;gap:2px;backdrop-filter:blur(4px)}
+.mcc{padding:3px 7px;background:none;border:1px solid var(--brd2);border-radius:4px;color:var(--t2);font-size:8px;cursor:pointer;transition:all .12s}
+.mcc.on,.mcc:hover{background:var(--tea);color:#fff;border-color:var(--tea)}
+.mleg{position:absolute;bottom:8px;left:8px;z-index:500;background:rgba(5,8,15,.92);border:1px solid var(--brd);border-radius:var(--rs);padding:6px 9px;backdrop-filter:blur(4px);font-size:8px}
+.legr{display:flex;align-items:center;gap:4px;margin-bottom:2px;color:var(--t2)}
+.legd{width:7px;height:7px;border-radius:50%}
+.leaflet-popup-content-wrapper{background:var(--card)!important;color:var(--t1)!important;border:1px solid var(--brd2)!important;border-radius:var(--r)!important;box-shadow:0 10px 40px rgba(0,0,0,.9)!important}
+.leaflet-popup-tip{background:var(--card)!important}
+.leaflet-popup-content{font-size:10px!important;line-height:1.8!important;margin:10px 12px!important;min-width:190px}
+.pt{font-size:12px;font-weight:700;margin-bottom:5px}
+.pr{display:flex;justify-content:space-between;gap:10px;margin-bottom:2px;font-size:10px}
+.pl{color:var(--t2)}.pv{font-weight:600}
+.pb{display:block;margin-top:6px;color:var(--teal);font-size:9px;border-top:1px solid var(--brd);padding-top:5px;cursor:pointer;text-decoration:none}
+.leaflet-tile-pane{filter:none!important}
+.leaflet-tile{filter:none!important}
+.leaflet-control-zoom a{background:var(--card)!important;color:var(--t1)!important;border-color:var(--brd)!important}
+
+/* AI CHAT */
+.ai-wrap{display:flex;flex-direction:column;height:100%}
+.ai-msgs{flex:1;overflow-y:auto;padding:11px;display:flex;flex-direction:column;gap:10px}
+.ai-msg{display:flex;gap:8px;align-items:flex-start}
+.ai-msg.u{flex-direction:row-reverse}
+.ai-av{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ai-av.bot{background:linear-gradient(135deg,var(--groq1),var(--groq2));font-size:12px;font-weight:700;color:#fff}
+.ai-av.usr{background:var(--bg3);border:1px solid var(--brd2);font-size:11px}
+.ai-bub{max-width:85%;padding:8px 11px;border-radius:var(--r);line-height:1.75;font-size:11px}
+.ai-bub.bot{background:var(--card);border:1px solid var(--brd);color:var(--t1)}
+.ai-bub.usr{background:var(--teabg);border:1px solid rgba(20,184,166,.15);color:var(--teal)}
+.ai-bub.th{color:var(--t2);font-style:italic}
+.td span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--t2);animation:bounce 1.2s infinite both;margin-right:2px}
+.td span:nth-child(2){animation-delay:.15s}.td span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+.ai-meta{font-size:7px;color:var(--t3);margin-top:3px;font-style:italic}
+.ai-sugs{padding:6px 11px;border-top:1px solid var(--brd);display:flex;gap:4px;flex-wrap:wrap}
+.ai-sug{padding:3px 7px;background:var(--bg3);border:1px solid var(--brd);border-radius:11px;font-size:9px;color:var(--t2);cursor:pointer;transition:all .12s;white-space:nowrap}
+.ai-sug:hover{border-color:var(--tea);color:var(--teal)}
+.ai-bar{padding:9px 11px;border-top:1px solid var(--brd);display:flex;gap:6px;background:var(--bg2)}
+.ai-inp{flex:1;background:var(--bg3);border:1px solid var(--brd);border-radius:18px;padding:7px 12px;color:var(--t1);font-size:11px;outline:none;resize:none;font-family:inherit;max-height:90px;transition:border .2s}
+.ai-inp:focus{border-color:var(--tea)}
+.ai-inp::placeholder{color:var(--t3)}
+.ai-send{background:linear-gradient(135deg,var(--groq1),var(--groq2));border:none;color:#fff;width:36px;height:36px;border-radius:9px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s}
+.ai-send:hover{opacity:.85}
+.ai-send:disabled{opacity:.35;cursor:not-allowed}
+
+/* AI BLOCK inside panels */
+.ai-block{background:linear-gradient(135deg,rgba(245,80,54,.06),rgba(255,140,0,.06));border:1px solid rgba(245,80,54,.2);border-radius:var(--r);padding:9px 12px;margin-bottom:9px}
+.ai-block-t{font-size:9px;font-weight:700;color:var(--oral);margin-bottom:6px}
+.ai-btns{display:flex;gap:5px;flex-wrap:wrap}
+.ai-btn{padding:4px 8px;background:rgba(245,80,54,.08);border:1px solid rgba(245,80,54,.2);border-radius:var(--rs);color:var(--oral);font-size:9px;cursor:pointer;transition:all .12s;white-space:nowrap}
+.ai-btn:hover{background:linear-gradient(135deg,var(--groq1),var(--groq2));color:#fff;border-color:transparent}
+.no-ai{font-size:9px;color:var(--t3);font-style:italic}
+
+/* INFO BOX */
+.ib{border-radius:var(--rs);padding:7px 11px;font-size:10px;line-height:1.6;margin-bottom:8px}
+.ib-live{background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12);color:var(--grnl)}
+.ib-ai{background:rgba(249,115,22,.05);border:1px solid rgba(249,115,22,.12);color:var(--oral)}
+.ib-warn{background:rgba(234,179,8,.05);border:1px solid rgba(234,179,8,.12);color:var(--yell)}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:10px}
+.tbl th{padding:5px 8px;color:var(--t2);font-weight:600;text-transform:uppercase;font-size:7px;letter-spacing:.4px;border-bottom:1px solid var(--brd);text-align:left;white-space:nowrap}
+.tbl td{padding:6px 8px;border-bottom:1px solid var(--brd);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.015)}
+.tbl tr.cp{cursor:pointer}
+.sx{overflow-x:auto}
+.prog{height:2px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:2px}
+.pf2{height:100%;border-radius:2px}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.btn{padding:3px 8px;background:none;border:1px solid var(--brd2);border-radius:var(--rs);color:var(--t2);font-size:9px;cursor:pointer;transition:all .12s}
+.btn.on,.btn:hover{background:var(--tea);color:#fff;border-color:var(--tea)}
+.bsm{background:var(--bg3);border:1px solid var(--brd);color:var(--t2);padding:2px 7px;border-radius:var(--rs);cursor:pointer;font-size:9px;transition:all .12s}
+.bsm:hover{background:var(--tea);color:#fff;border-color:var(--tea)}
+
+/* CHARTS */
+.ch{position:relative}
+.chl{height:250px}.chm{height:185px}.chs{height:140px}
+
+/* LOADING */
+.ldw{display:flex;align-items:center;justify-content:center;gap:8px;padding:20px;color:var(--t2);font-size:10px}
+.lds{width:20px;height:20px;border:2px solid var(--brd);border-top-color:var(--tea);border-radius:50%;animation:spin .7s linear infinite}
+
+/* DETAIL */
+#det{position:fixed;right:-410px;top:0;width:400px;height:100vh;background:var(--bg2);border-left:1px solid var(--brd);z-index:1000;overflow-y:auto;transition:right .25s ease}
+#det.open{right:0}
+#dov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:none}
+#dov.on{display:block}
+.dhdr{padding:10px 12px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:10}
+.dttl{font-size:12px;font-weight:700}
+.dcls{background:var(--bg3);border:1px solid var(--brd);color:var(--t2);padding:3px 8px;border-radius:var(--rs);cursor:pointer;font-size:9px}
+.dcls:hover{background:var(--red);color:#fff;border-color:var(--red)}
+#dbody{padding:12px}
+
+/* EXPORT */
+#emod{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:2000;display:none;align-items:center;justify-content:center}
+#emod.on{display:flex}
+.mbox{background:var(--bg2);border:1px solid var(--brd2);border-radius:var(--r);padding:16px;width:260px}
+.mbox h3{margin-bottom:10px;font-size:12px}
+.mbtn{display:block;width:100%;text-align:left;background:var(--bg3);border:1px solid var(--brd);color:var(--t1);padding:7px 10px;border-radius:var(--rs);cursor:pointer;font-size:10px;margin-bottom:4px;transition:all .12s}
+.mbtn:hover{background:var(--tea);border-color:var(--tea)}
+
+/* GROQ SETUP */
+.gpop{position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:3000;display:flex;align-items:center;justify-content:center}
+.gbox{background:var(--bg2);border:1px solid var(--brd2);border-radius:var(--r);padding:20px;width:370px;max-width:92vw}
+.gbox h3{margin-bottom:7px;font-size:14px;background:linear-gradient(90deg,var(--groq1),var(--groq2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.ginp{width:100%;background:var(--bg3);border:1px solid var(--brd2);color:var(--t1);padding:8px 10px;border-radius:var(--rs);font-size:11px;outline:none;font-family:monospace;margin-bottom:8px}
+.gsave{flex:1;background:linear-gradient(135deg,var(--groq1),var(--groq2));border:none;color:#fff;padding:8px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:700}
+.gcancel{background:var(--bg3);border:1px solid var(--brd);color:var(--t2);padding:8px 12px;border-radius:var(--rs);cursor:pointer;font-size:11px}
+
+/* FOOTER */
+footer{height:20px;background:var(--bg2);border-top:1px solid var(--brd);display:flex;align-items:center;gap:4px;padding:0 11px;flex-shrink:0;overflow:hidden}
+.fl{font-weight:700;color:var(--t3);font-size:7px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.fa{background:var(--bg3);border:1px solid var(--brd);padding:1px 4px;border-radius:2px;color:var(--t2);font-size:7px;white-space:nowrap;text-decoration:none}
+.fa:hover{color:var(--teal)}
+.fd{margin-left:auto;color:var(--t3);font-size:7px;white-space:nowrap}
+
+/* VAX CARD */
+.vc{background:var(--card);border:1px solid var(--brd);border-radius:var(--r);padding:10px}
+
+/* ALERT CARD */
+.ac{background:var(--card);border:1px solid var(--brd);border-left:3px solid;border-radius:var(--r);padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:border-color .15s}
+.ac:hover{border-color:var(--tea)}
+
+@media(max-width:900px){.sidebar{display:none}.mp{display:none}.g4,.g6{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.g2,.g3{grid-template-columns:1fr}}
+/* ═══════════════════════════════════════════════════════════════
+   🔒 MASQUAGE DES FONCTIONNALITÉS IA (réversible)
+   Pour RÉACTIVER l'IA : supprime ce bloc CSS entre les ═══
+   ═══════════════════════════════════════════════════════════════ */
+.ai-block { display: none !important; }          /* blocs d'analyse IA dans chaque section */
+.ib-ai { display: none !important; }             /* ligne info "analyse IA" */
+.brand-sub { display: none !important; }         /* sous-titre "Assistant IA" sous le logo */
+button.tab[onclick*="goTab('ai'"] { display: none !important; }  /* onglet Assistant IA */
+.sfr:has(#sfai) { display: none !important; }    /* ligne "Assistant IA : Non config." */
+#aibtn, #tavily-btn { display: none !important; } /* boutons config clés */
+/* ═══════════════════════════════════════════════════════════════ */
+</style>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- 📊 COMPTEUR DE VISITEURS PRIVÉ (Cloudflare Web Analytics)        -->
+<!-- Invisible pour les visiteurs. Toi seul vois les stats sur       -->
+<!-- dash.cloudflare.com. Gratuit et illimité.                       -->
+<!--                                                                  -->
+<!-- POUR L'ACTIVER (après avoir publié ton site) :                  -->
+<!-- 1. Va sur https://dash.cloudflare.com                           -->
+<!-- 2. Crée un compte gratuit                                       -->
+<!-- 3. Menu "Analytics & Logs" → "Web Analytics" → "Add a site"     -->
+<!-- 4. Entre l'adresse de ton site (ex: live-disease.vercel.app)    -->
+<!-- 5. Cloudflare te donne un TOKEN (une longue suite de lettres)   -->
+<!-- 6. Remplace TON_TOKEN_ICI ci-dessous par ce token               -->
+<!-- 7. Enlève les balises <!-- et --> autour du script              -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--
+<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "TON_TOKEN_ICI"}'></script>
+-->
+
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">🌍</div>
+    <div>
+      <div class="brand-name">Live Disease</div>
+      <div class="brand-sub">Assistant IA</div>
+    </div>
+  </div>
+  <div class="srch">
+    <input id="sIn" placeholder="Rechercher maladie, pays, virus, pathogène..." oninput="doSearch(this.value)" onkeydown="sKey(event)" autocomplete="off"/>
+    <span class="s-ico">🔍</span>
+    <div class="s-drop" id="sDrop"></div>
+  </div>
+  <div class="hr">
+    <button class="btn-ai" id="aibtn" onclick="openSetup()" style="display:none">🤖 Assistant IA</button>
+    <button class="btn-ai" id="tavily-btn" onclick="openTavilySetup()" style="display:none;background:rgba(20,184,166,.1);border-color:rgba(20,184,166,.25);color:#5eead4">🌐 Recherche Web</button>
+    <div class="live-b"><div class="live-d"></div>LIVE</div>
+    <div class="clk" id="clk"></div>
+    <select class="lang" onchange="setLang(this.value)">
+      <option value="en">🇬🇧 English</option><option value="zh">🇨🇳 中文</option>
+      <option value="hi">🇮🇳 हिन्दी</option><option value="es">🇪🇸 Español</option>
+      <option value="fr">🇫🇷 Français</option><option value="ar">🇸🇦 العربية</option>
+      <option value="bn">🇧🇩 বাংলা</option><option value="pt">🇧🇷 Português</option>
+      <option value="ru">🇷🇺 Русский</option><option value="ur">🇵🇰 اردو</option>
+      <option value="id">🇮🇩 Indonesia</option><option value="de">🇩🇪 Deutsch</option>
+      <option value="ja">🇯🇵 日本語</option><option value="sw">🇰🇪 Kiswahili</option>
+      <option value="tr">🇹🇷 Türkçe</option><option value="ko">🇰🇷 한국어</option>
+      <option value="it">🇮🇹 Italiano</option><option value="vi">🇻🇳 Tiếng Việt</option>
+      <option value="fa">🇮🇷 فارسی</option><option value="th">🇹🇭 ไทย</option>
+      <option value="pl">🇵🇱 Polski</option><option value="uk">🇺🇦 Українська</option>
+      <option value="nl">🇳🇱 Nederlands</option><option value="ha">🇳🇬 Hausa</option>
+      <option value="ta">🇮🇳 தமிழ்</option><option value="fil">🇵🇭 Filipino</option>
+    </select>
+    <button class="btn-xs" onclick="openExp()" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:700;padding:6px 14px;border:none;box-shadow:0 2px 8px rgba(34,197,94,.3)">⬇ Exporter les données</button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <div class="sd" id="sdot"></div>
+  <div id="sstat"><span class="sp sp-warn"><span class="spin"></span>Chargement...</span></div>
+  <div class="sr">
+    <span id="stime" style="color:var(--t3)"></span>
+    <button class="sref" onclick="refreshAll()">🔄 Actualiser</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="goTab('map',this)">🗺️ Carte mondiale</button>
+  <button class="tab" onclick="goTab('dash',this)">📊 Dashboard</button>
+  <button class="tab" onclick="goTab('counters',this)">🔢 Compteurs <span class="ttag tl">LIVE</span></button>
+  <button class="tab" onclick="goTab('ai',this)">🦙 Assistant IA <span class="ttag ta">LIVE</span></button>
+  <button class="tab" onclick="goTab('covid',this)">🦠 COVID <span class="ttag tl">API LIVE</span></button>
+  <button class="tab" onclick="goTab('flu',this)">🤧 Grippe <span class="ttag tl">API LIVE</span></button>
+  <button class="tab" onclick="goTab('diseases',this)">🦟 Maladies</button>
+  <button class="tab" onclick="goTab('alerts',this)">⚠️ Alertes <span class="ttag tl" id="acnt">10</span></button>
+  <button class="tab" onclick="goTab('countries',this)">🌍 Pays <span class="ttag tl">API 200+</span></button>
+  <button class="tab" onclick="goTab('vaccines',this)">💉 Vaccins</button>
+  <button class="tab" onclick="goTab('economic',this)">💰 Économie</button>
+  <button class="tab" onclick="goTab('science',this)">🔬 Science</button>
+  <button class="tab" onclick="goTab('livefeed',this)">📡 Live Feed <span class="ttag tl">RSS</span></button>
+  <button class="tab" onclick="goTab('cdc',this)">🏛️ CDC USA <span class="ttag tl">GOV</span></button>
+</div>
+
+<div class="body">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-s"><input id="sbf" placeholder="Filtrer maladies..." oninput="filterSB(this.value)"/></div>
+    <div class="sb-f">
+      <button class="sf on" onclick="setSBR('',this)">Toutes</button>
+      <button class="sf" onclick="setSBR('critical',this)" style="color:var(--redl)">Crit.</button>
+      <button class="sf" onclick="setSBR('high',this)" style="color:var(--oral)">Haut</button>
+      <button class="sf" onclick="setSBR('medium',this)" style="color:var(--yell)">Moy.</button>
+      <button class="sf" onclick="setSBR('watch',this)" style="color:var(--blul)">Surv.</button>
+    </div>
+    <div class="sb-list" id="sbList"></div>
+    <div class="sb-foot">
+      <div class="sfr"><span>Maladies</span><b id="sfn">—</b></div>
+      <div class="sfr"><span>Pays API live</span><b id="sfcv">—</b></div>
+      <div class="sfr"><span>Assistant IA</span><b id="sfai" style="color:var(--yell)">Non config.</b></div>
+      <div class="sfr"><span>Synchro</span><b id="sfsync">—</b></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- MAP -->
+    <div class="panel on" id="panel-map">
+      <!-- Construit dynamiquement par map.js initMapFull() -->
+    </div>
+    <!-- DASHBOARD --><!-- DASHBOARD -->
+    <div class="panel" id="panel-dash">
+      <div id="dash-sources" style="margin-bottom:9px;padding:6px 10px;background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.12);border-radius:var(--rs)"></div>
+      <!-- GROQ DANS DASHBOARD -->
+      <div class="ai-block" id="dash-ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Analyse Dashboard</div>
+        <div class="ai-btns" id="dash-ai-btns"></div>
+      </div>
+      <div class="g6" id="dash-met" style="margin-bottom:9px"></div>
+      <div class="g2" style="margin-bottom:8px">
+        <div class="card"><div class="ct">Répartition cas <span class="b-doc">OMS/CDC</span></div><div class="ch chm"><canvas id="c-donut"></canvas></div></div>
+        <div class="card"><div class="ct">Top 10 maladies <span class="b-doc">OMS/CDC</span></div><div class="ch chm"><canvas id="c-top10"></canvas></div></div>
+      </div>
+      <div class="g3">
+        <div class="card"><div class="ct">Statut vaccins</div><div class="ch chs"><canvas id="c-vax"></canvas></div></div>
+        <div class="card"><div class="ct">COVID continents <span class="b-live">LIVE</span></div><div class="ch chs"><canvas id="c-cont"></canvas></div></div>
+        <div class="card"><div class="ct">Alertes récentes</div><div id="dash-alerts"></div></div>
+      </div>
+    </div>
+
+    <!-- COMPTEURS LIVE -->
+    <div class="panel" id="panel-counters"></div>
+
+    <!-- AI GROQ -->
+    <div class="pf" id="panel-ai">
+      <div class="ai-wrap">
+        <div class="ai-msgs" id="aiMsgs"></div>
+        <div class="ai-sugs" id="aiSugs"></div>
+        <div class="ai-bar">
+          <textarea class="ai-inp" id="aiIn" placeholder="Posez n'importe quelle question sur les épidémies mondiales..." rows="1" onkeydown="aiKey(event)" oninput="autoH(this)"></textarea>
+          <button class="ai-send" id="aiBtn" onclick="sendAI()">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COVID LIVE -->
+    <div class="panel" id="panel-covid">
+      <div class="ib ib-live">🟢 <strong>API disease.sh — temps réel</strong> · Gouvernements mondiaux · Auto-refresh 5 min</div>
+      <!-- GROQ DANS COVID -->
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Analyse COVID</div>
+        <div class="ai-btns" id="covid-ai-btns"></div>
+      </div>
+      <div class="g4" id="cv-met" style="margin-bottom:9px"><div class="mc" style="grid-column:span 4"><div class="ldw"><div class="lds"></div></div></div></div>
+      <div class="g2" style="margin-bottom:8px">
+        <div class="card"><div class="ct">Top 15 cas actifs <span class="b-live">LIVE</span></div><div class="ch chl"><canvas id="c-cv-cas"></canvas></div></div>
+        <div class="card"><div class="ct">Top 10 décès <span class="b-live">LIVE</span></div><div class="ch chl"><canvas id="c-cv-dth"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="ct">Tableau complet <span class="b-live">disease.sh</span> <button class="bsm" onclick="exportCSV('covid')" style="margin-left:auto">⬇ CSV</button></div>
+        <div class="sx"><table class="tbl"><thead><tr><th>Drapeau</th><th>Pays</th><th>Total cas</th><th>Actifs</th><th>Décès</th><th>Guéris</th><th>Mortalité</th><th>Cas/million</th></tr></thead><tbody id="cv-tbl"><tr><td colspan="8"><div class="ldw"><div class="lds"></div></div></td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- GRIPPE LIVE -->
+    <div class="panel" id="panel-flu">
+      <div class="ib ib-live">🟢 <strong>disease.sh + FluNet OMS</strong> · 147 pays · Données hebdomadaires</div>
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Analyse Grippe</div>
+        <div class="ai-btns" id="flu-ai-btns"></div>
+      </div>
+      <div class="g4" id="flu-met" style="margin-bottom:9px"></div>
+      <div class="g2">
+        <div class="card"><div class="ct">Grippe par région OMS <span class="b-live">LIVE</span></div><div class="ch chl"><canvas id="c-flu-r"></canvas></div></div>
+        <div class="card"><div class="ct">COVID vs Grippe <span class="b-live">LIVE</span></div><div class="ch chl"><canvas id="c-cvflu"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- MALADIES -->
+    <div class="panel" id="panel-diseases">
+      <div class="ib ib-ai">🦙 <strong>Base OMS/CDC/ECDC + analyse Assistant IA</strong> · Cliquez une ligne pour fiche complète + analyse IA</div>
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Maladies</div>
+        <div class="ai-btns" id="dis-ai-btns"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn on" onclick="filterDis('',this)">Toutes</button>
+        <button class="btn" onclick="filterDis('critical',this)">🔴 Critique</button>
+        <button class="btn" onclick="filterDis('high',this)">🟠 Élevé</button>
+        <button class="btn" onclick="filterDis('medium',this)">🟡 Moyen</button>
+        <button class="btn" onclick="filterDis('watch',this)">🔵 Surveillance</button>
+        <input id="dis-q" placeholder="🔍 Chercher..." oninput="filterDisQ(this.value)" style="background:var(--bg3);border:1px solid var(--brd);color:var(--t1);padding:3px 7px;border-radius:var(--rs);font-size:9px;outline:none;width:120px"/>
+        <button class="bsm" onclick="exportCSV('diseases')" style="margin-left:auto">⬇ CSV</button>
+      </div>
+      <div class="card sx"><table class="tbl"><thead><tr>
+        <th>Maladie</th><th>Pathogène</th><th>Risque</th><th>Cas</th><th>Décès</th><th>Mortalité</th><th>R₀</th><th>Tendance</th><th>Vaccin</th><th>Source</th>
+      </tr></thead><tbody id="dis-tbl"></tbody></table></div>
+    </div>
+
+    <!-- ALERTES -->
+    <div class="panel" id="panel-alerts">
+      <!-- Header RSS injecté par rss.js -->
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Analyse alertes</div>
+        <div class="ai-btns" id="alert-ai-btns"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn on" onclick="filterAlerts('',this)">Toutes</button>
+        <button class="btn" onclick="filterAlerts('critical',this)" style="color:var(--redl)">🔴 Critique</button>
+        <button class="btn" onclick="filterAlerts('high',this)" style="color:var(--oral)">🟠 Élevé</button>
+        <button class="btn" onclick="filterAlerts('medium',this)" style="color:var(--yell)">🟡 Moyen</button>
+        <button class="btn" onclick="filterAlerts('watch',this)" style="color:var(--blul)">🔵 Surveillance</button>
+        <span style="font-size:8px;color:var(--t2);margin-left:4px" id="rss-count"></span>
+      </div>
+      <div id="alerts-list"></div>
+    </div>
+
+    <!-- PAYS — 200+ via API -->
+    <div class="panel" id="panel-countries">
+      <div class="ib ib-live" id="cty-src-info">🟢 <strong>Chargement pays...</strong></div>
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Analyse pays</div>
+        <div class="ai-btns" id="cty-ai-btns"></div>
+      </div>
+      <div class="btn-row">
+        <select id="cty-cont" onchange="renderCty()" style="background:var(--bg3);border:1px solid var(--brd);color:var(--t1);padding:3px 7px;border-radius:var(--rs);font-size:9px;outline:none">
+          <option value="">Tous continents</option>
+          <option value="Africa">Afrique</option>
+          <option value="Asia">Asie</option>
+          <option value="Europe">Europe</option>
+          <option value="North America">Amériques Nord</option>
+          <option value="South America">Amériques Sud</option>
+          <option value="Australia-Oceania">Océanie</option>
+        </select>
+        <input id="cty-q" placeholder="🔍 Chercher pays (ex: Sénégal)..." oninput="renderCty()" style="background:var(--bg3);border:1px solid var(--brd);color:var(--t1);padding:3px 7px;border-radius:var(--rs);font-size:9px;outline:none;width:160px"/>
+        <span style="font-size:9px;color:var(--t2)" id="cty-cnt"></span>
+        <button class="bsm" onclick="exportCSV('countries')" style="margin-left:auto">⬇ CSV</button>
+      </div>
+      <div class="card sx"><table class="tbl"><thead><tr>
+        <th></th><th>Pays</th><th>Continent</th><th>Total cas</th><th>Actifs</th><th>Décès</th><th>Guéris</th><th>Mortalité</th><th>Cas/million</th>
+      </tr></thead><tbody id="cty-tbl"><tr><td colspan="10"><div class="ldw"><div class="lds"></div>Chargement 200+ pays API...</div></td></tr></tbody></table></div>
+    </div>
+
+    <!-- VACCINS -->
+    <div class="panel" id="panel-vaccines">
+      <div id="vax-real-data" style="margin-bottom:10px"></div>
+      <div id="fda-safety-data" style="margin-bottom:10px"></div>
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Vaccins en temps réel</div>
+        <div class="ai-btns" id="vax-ai-btns"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn on" onclick="filterVax('',this)">Tous</button>
+        <button class="btn" onclick="filterVax('Disponible',this)">✅ Disponibles</button>
+        <button class="btn" onclick="filterVax('Essais',this)">🔬 Essais</button>
+        <button class="btn" onclick="filterVax('Aucun',this)">❌ Aucun</button>
+        <button class="bsm" onclick="exportCSV('vaccines')" style="margin-left:auto">⬇ CSV</button>
+      </div>
+      <div id="vax-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:8px"></div>
+    </div>
+
+    <!-- ÉCONOMIE -->
+    <div class="panel" id="panel-economic">
+      <div id="econ-real-data" style="margin-bottom:10px"></div>
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Impact économique en temps réel</div>
+        <div class="ai-btns" id="econ-ai-btns"></div>
+      </div>
+      <div class="g4" id="econ-met" style="margin-bottom:9px"></div>
+      <div class="g2" style="margin-bottom:8px">
+        <div class="card"><div class="ct">Impact PIB par région</div><div class="ch chm"><canvas id="c-gdp"></canvas></div></div>
+        <div class="card"><div class="ct">Coût direct par maladie ($B)</div><div class="ch chm"><canvas id="c-cost"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-bottom:8px"><div class="ct">Impact sectoriel ($B)</div><div class="ch chm"><canvas id="c-sec"></canvas></div></div>
+      <div class="card">
+        <div class="ct">Détail économique par maladie <span style="font-size:7px;background:rgba(234,179,8,.1);color:var(--yell);border:1px solid rgba(234,179,8,.2);padding:1px 5px;border-radius:4px">📚 Estimations d'études</span> <button class="bsm" onclick="exportCSV('economic')" style="margin-left:8px">⬇ CSV</button></div>
+        <div class="sx"><table class="tbl"><thead><tr><th>Maladie</th><th>Coût direct</th><th>Tourisme</th><th>Agriculture</th><th>Santé/an</th><th>PIB</th><th>Emplois</th></tr></thead><tbody id="econ-tbl"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- SCIENCE -->
+    <div class="panel" id="panel-science">
+      <div id="sci-real-data" style="margin-bottom:10px"></div>
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Recherche scientifique en temps réel</div>
+        <div class="ai-btns" id="sci-ai-btns"></div>
+      </div>
+      <div class="ib ib-warn">⚠️ Résumés éditoriaux — cliquez pour accéder à la source originale</div>
+      <div class="btn-row">
+        <button class="btn on" onclick="filterSci('',this)">Toutes</button>
+        <button class="btn" onclick="filterSci('WHO',this)">OMS</button>
+        <button class="btn" onclick="filterSci('CDC',this)">CDC</button>
+        <button class="btn" onclick="filterSci('Lancet',this)">Lancet</button>
+        <button class="btn" onclick="filterSci('NEJM',this)">NEJM</button>
+        <button class="btn" onclick="filterSci('Nature',this)">Nature</button>
+      </div>
+      <div id="sci-list"></div>
+    </div>
+
+  
+    <!-- LIVE FEED RSS -->
+    <div class="panel" id="panel-livefeed">
+      <div style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.15);border-radius:var(--r);padding:10px 13px;margin-bottom:9px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:700;color:var(--grnl)">📡 Flux en temps réel — OMS + ReliefWeb</div>
+          <button onclick="fetchAllRSS()" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:var(--grnl);padding:3px 8px;border-radius:var(--rs);cursor:pointer;font-size:9px">🔄 Actualiser</button>
+        </div>
+        <div id="rss-status-live" style="font-size:9px;color:var(--t2)">Chargement...</div>
+      </div>
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Analyse du flux</div>
+        <div class="ai-btns" id="livefeed-ai-btns"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px" id="livefeed-grid">
+        <div style="grid-column:span 2;text-align:center;padding:20px;color:var(--t2);font-size:10px">
+          <div class="ldw"><div class="lds"></div> Chargement flux RSS...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CDC USA -->
+    <div class="panel" id="panel-cdc">
+      <div style="background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.15);border-radius:var(--r);padding:10px 13px;margin-bottom:9px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:700;color:var(--blul)">🏛️ Data.CDC.gov — Données gouvernementales USA</div>
+          <button onclick="fetchCDCData()" style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:var(--blul);padding:3px 8px;border-radius:var(--rs);cursor:pointer;font-size:9px">🔄 Actualiser</button>
+        </div>
+        <div id="cdc-status" style="font-size:9px;color:var(--t2)">Chargement...</div>
+        <div style="font-size:8px;color:var(--t3);margin-top:5px">Source officielle CDC (NNDSS). API publique gratuite, données réelles des maladies déclarées aux USA.</div>
+      </div>
+      <div class="ai-block">
+        <div class="ai-block-t">🦙 Assistant IA — Analyse CDC</div>
+        <div class="ai-btns" id="cdc-ai-btns"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px" id="cdc-grid">
+        <div style="grid-column:span 3;text-align:center;padding:20px;color:var(--t2);font-size:10px">
+          <div class="ldw"><div class="lds"></div> Chargement données CDC...</div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /content -->
+</div><!-- /body -->
+
+<!-- DETAIL -->
+<div id="det"><div class="dhdr"><div class="dttl" id="dttl">Détails</div><button class="dcls" onclick="closeDet()">✕</button></div><div id="dbody"></div></div>
+<div id="dov" onclick="closeDet()"></div>
+
+<!-- EXPORT -->
+<div id="emod">
+  <div class="mbox">
+    <h3>⬇ Exporter</h3>
+    <button class="mbtn" onclick="exportCSV('diseases')">📋 Maladies (CSV)</button>
+    <button class="mbtn" onclick="exportCSV('countries')">🌍 Pays 200+ (CSV)</button>
+    <button class="mbtn" onclick="exportCSV('economic')">💰 Économie (CSV)</button>
+    <button class="mbtn" onclick="exportCSV('vaccines')">💉 Vaccins (CSV)</button>
+    <button class="mbtn" onclick="exportCSV('covid')">🦠 COVID live (CSV)</button>
+    <button class="mbtn" onclick="exportJSON()">{ } Tout (JSON)</button>
+    <button class="mbtn" style="background:none;color:var(--t3)" onclick="closeExp()">Annuler</button>
+  </div>
+</div>
+
+<footer>
+  <span class="fl">Sources :</span>
+  <a href="https://disease.sh" target="_blank" rel="noopener" class="fa">⚡ disease.sh LIVE</a>
+  <a href="https://console.groq.com" target="_blank" rel="noopener" class="fa">🦙 Assistant IA</a>
+  <a href="https://www.who.int" target="_blank" rel="noopener" class="fa">🌐 OMS/WHO</a>
+  <a href="https://www.cdc.gov" target="_blank" rel="noopener" class="fa">🏛️ CDC</a>
+  <a href="https://www.ecdc.europa.eu" target="_blank" rel="noopener" class="fa">🇪🇺 ECDC</a>
+  <a href="https://promedmail.org" target="_blank" rel="noopener" class="fa">🔔 ProMED</a>
+  <span class="fd">COVID/Grippe/Pays = API temps réel · IA = Assistant intelligent · Maladies = OMS/CDC</span>
+</footer>
+
+<script src="data.js"></script>
+<script src="i18n.js"></script>
+<script src="country-names.js"></script>
+<script src="map.js"></script>
+<script src="rss.js"></script>
+<script src="counters.js"></script>
+<script src="groq-live.js"></script>
+<script src="cdc.js"></script>
+<script src="tavily.js"></script>
+<script src="apis.js"></script>
+<script src="who-api.js"></script>
+<script src="reliefweb-api.js"></script>
+<script src="extra-apis.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

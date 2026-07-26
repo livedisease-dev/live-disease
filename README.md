@@ -1,2 +1,52 @@
-# live-disease
-Real-time global disease and outbreak tracker. 100 diseases across 195 countries, with live data from WHO, UN, CDC, ECDC, disease.sh, PubMed, World Bank, ReliefWeb, and more. Available in 26 languages.
+# 🌍 World Disease Monitor — Surveillance épidémique temps réel
+
+## Même méthode que HealthMap (Harvard) + vraies API
+
+### Comment ça marche (approche HealthMap)
+Comme HealthMap, l'app lit des dizaines de sources de news/RSS toutes les heures,
+détecte automatiquement la maladie et le pays dans chaque alerte, et place un point
+sur la carte. Plus il y a de news sur un foyer, plus le point est gros.
+
+### 14 sources d'actualités temps réel (comme HealthMap)
+- OMS Disease Outbreak News + Emergencies
+- ReliefWeb ONU (API directe, sans proxy)
+- CDC (Emerging Diseases + Outbreaks)
+- CIDRAP, ECDC, ProMED
+- Google News (Épidémies, Foyers OMS, Ebola/Marburg/Mpox, FR, H5N1)
+
+### + Vraies API de cas (mieux que HealthMap sur ces maladies)
+| Source | Données | Clé? |
+|--------|---------|------|
+| disease.sh | COVID, grippe (mondial) | ❌ |
+| WHO GHO | 13 maladies OMS (mondial) | ❌ |
+| Delphi CMU | Dengue (Amériques) | ❌ |
+| CDC NNDSS | ~30 maladies (USA) | ❌ |
+| ReliefWeb ONU | Alertes + carte | ❌ |
+| ClinicalTrials | Essais vaccins | ❌ |
+| PubMed | Publications | ❌ |
+| Banque Mondiale | Économie/pays | ❌ |
+| OpenFDA | Sécurité vaccins | ❌ |
+| Our World in Data | Historique | ❌ |
+| Nominatim | Géolocalisation | ❌ |
+
+Toutes gratuites, sans clé, sans limite. Marche pour des millions d'utilisateurs.
+
+### Sources sur la carte (indicateurs)
+- 🌐 ONU temps réel (ReliefWeb)
+- 🌍 Données OMS réelles (WHO GHO)
+- 🏛️ CDC USA réel
+- 📊 Delphi CMU réel
+- 📡 RSS OMS / News (méthode HealthMap)
+- 📋 base (référence stockée)
+
+### Groq AI (OPTIONNEL) — Llama 4 Scout
+L'app marche à 100% sans Groq. Groq sert juste à expliquer/analyser.
+console.groq.com → clé gsk_ (gratuit, zéro carte)
+
+### Ouvrir
+Dézipper → double-clic index.html dans Chrome/Firefox (avec internet)
+
+### Ce qui est temps réel vs référence
+- Cas, alertes, foyers, vaccins, science, économie/pays → API temps réel
+- R₀, pathogène, mortalité, descriptions → référence médicale stockée
+  (aucune API ne les streame, comme un dictionnaire médical)
