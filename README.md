@@ -14,23 +14,6 @@ sur la carte. Plus il y a de news sur un foyer, plus le point est gros.
 - CIDRAP, ECDC, ProMED
 - Google News (Épidémies, Foyers OMS, Ebola/Marburg/Mpox, FR, H5N1)
 
-### + Vraies API de cas (mieux que HealthMap sur ces maladies)
-| Source | Données | Clé? |
-|--------|---------|------|
-| disease.sh | COVID, grippe (mondial) | ❌ |
-| WHO GHO | 13 maladies OMS (mondial) | ❌ |
-| Delphi CMU | Dengue (Amériques) | ❌ |
-| CDC NNDSS | ~30 maladies (USA) | ❌ |
-| ReliefWeb ONU | Alertes + carte | ❌ |
-| ClinicalTrials | Essais vaccins | ❌ |
-| PubMed | Publications | ❌ |
-| Banque Mondiale | Économie/pays | ❌ |
-| OpenFDA | Sécurité vaccins | ❌ |
-| Our World in Data | Historique | ❌ |
-| Nominatim | Géolocalisation | ❌ |
-
-Toutes gratuites, sans clé, sans limite. Marche pour des millions d'utilisateurs.
-
 ### Sources sur la carte (indicateurs)
 - 🌐 ONU temps réel (ReliefWeb)
 - 🌍 Données OMS réelles (WHO GHO)
