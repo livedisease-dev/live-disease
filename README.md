@@ -39,9 +39,6 @@ Toutes gratuites, sans clé, sans limite. Marche pour des millions d'utilisateur
 - 📡 RSS OMS / News (méthode HealthMap)
 - 📋 base (référence stockée)
 
-### Groq AI (OPTIONNEL) — Llama 4 Scout
-L'app marche à 100% sans Groq. Groq sert juste à expliquer/analyser.
-console.groq.com → clé gsk_ (gratuit, zéro carte)
 
 ### Ouvrir
 Dézipper → double-clic index.html dans Chrome/Firefox (avec internet)
